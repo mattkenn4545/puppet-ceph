@@ -27,18 +27,11 @@
 #
 
 define ceph::mds (
-  $fsid,
-  $auth_type = 'cephx',
   $mds_data = '/var/lib/ceph/mds',
 ) {
 
   include 'ceph::package'
   include 'ceph::params'
-
-  class { 'ceph::conf':
-    fsid      => $fsid,
-    auth_type => $auth_type,
-  }
 
   $mds_data_expanded = "${mds_data}/mds.${name}"
 
@@ -46,22 +39,22 @@ define ceph::mds (
     ensure  => directory,
     owner   => 'root',
     group   => 0,
-    mode    => '0755',
+    mode    => '0755'
   }
 
   exec { 'ceph-mds-keyring':
-    command =>"ceph auth get-or-create mds.${name} mds 'allow ' osd 'allow *' mon 'allow rwx'",
-    creates => "/var/lib/ceph/mds/mds.${name}/keyring",
-    before  => Service["ceph-mds.${name}"],
-    require => Package['ceph'],
-  }
+    command =>"ceph auth get-or-create mds.${name} mds 'allow ' osd 'allow *' mon 'allow rwx' > ${$mds_data_expanded}/keyring",
+    creates => "${$mds_data_expanded}/keyring",
+    require => Package['ceph']
+  } ->
+
+  ceph::conf::mds { $name: } ->
 
   service { "ceph-mds.${name}":
     ensure   => running,
     provider => $::ceph::params::service_provider,
     start    => "service ceph start mds.${name}",
     stop     => "service ceph stop mds.${name}",
-    status   => "service ceph status mds.${name}",
-    require  => Exec['ceph-mds-keyring'],
+    status   => "service ceph status mds.${name}"
   }
 }
