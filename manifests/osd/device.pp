@@ -35,7 +35,7 @@ define ceph::osd::device (
 
   exec { "mkpart_${devname}":
     command => "parted -a optimal -s ${name} mkpart ceph 0% 100%",
-    unless  => "parted ${name} print | egrep '^ 1.*ceph$'",
+    unless  => "parted ${name} print | egrep '^ 1.*ceph'",
     require => [Package['parted'], Exec["mktable_gpt_${devname}"]]
   }
 
